@@ -15,7 +15,7 @@ async function getAllMentors(req, res) {
     );
     return res.status(200).json({ success: true, count: rows.length, mentors: rows });
   } catch (err) {
-    console.error('GetAllMentors error:', err);
+    console.error('getAllMentors error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
@@ -35,12 +35,14 @@ async function getMentorById(req, res) {
        GROUP BY m.id`,
       [req.params.id]
     );
+
     if (rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Mentor not found.' });
     }
+
     return res.status(200).json({ success: true, mentor: rows[0] });
   } catch (err) {
-    console.error('GetMentorById error:', err);
+    console.error('getMentorById error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
@@ -73,7 +75,7 @@ async function createMentor(req, res) {
       mentorId: result.insertId,
     });
   } catch (err) {
-    console.error('CreateMentor error:', err);
+    console.error('createMentor error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
@@ -89,17 +91,16 @@ async function updateMentor(req, res) {
       return res.status(404).json({ success: false, message: 'Mentor not found.' });
     }
 
-    // Build dynamic SET clause
     const fields = [];
     const values = [];
 
-    if (name       !== undefined) { fields.push('name = ?');         values.push(name); }
-    if (email      !== undefined) { fields.push('email = ?');        values.push(email); }
-    if (specialty  !== undefined) { fields.push('specialty = ?');    values.push(specialty); }
-    if (bio        !== undefined) { fields.push('bio = ?');          values.push(bio); }
-    if (contact_info !== undefined) { fields.push('contact_info = ?'); values.push(contact_info); }
-    if (is_active  !== undefined) { fields.push('is_active = ?');    values.push(is_active); }
-    if (avatar_url !== undefined) { fields.push('avatar_url = ?');   values.push(avatar_url); }
+    if (name !== undefined) fields.push('name = ?'), values.push(name);
+    if (email !== undefined) fields.push('email = ?'), values.push(email);
+    if (specialty !== undefined) fields.push('specialty = ?'), values.push(specialty);
+    if (bio !== undefined) fields.push('bio = ?'), values.push(bio);
+    if (contact_info !== undefined) fields.push('contact_info = ?'), values.push(contact_info);
+    if (is_active !== undefined) fields.push('is_active = ?'), values.push(is_active);
+    if (avatar_url !== undefined) fields.push('avatar_url = ?'), values.push(avatar_url);
 
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update.' });
@@ -110,7 +111,7 @@ async function updateMentor(req, res) {
 
     return res.status(200).json({ success: true, message: 'Mentor updated successfully.' });
   } catch (err) {
-    console.error('UpdateMentor error:', err);
+    console.error('updateMentor error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
@@ -124,7 +125,7 @@ async function deleteMentor(req, res) {
     }
     return res.status(200).json({ success: true, message: 'Mentor deleted.' });
   } catch (err) {
-    console.error('DeleteMentor error:', err);
+    console.error('deleteMentor error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
