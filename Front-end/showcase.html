@@ -5,7 +5,6 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Talent Showcase – TalentLaunch Rwanda</title>
 <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700;900&family=DM+Sans:wght@300;400;500&display=swap" rel="stylesheet">
-<script src="js/api.js" defer></script>
 <style>
   :root {
     --gold: #C9A84C;
@@ -214,31 +213,6 @@
     background: rgba(45,122,82,0.1); color: var(--green-mid); font-weight: 500;
   }
 
-  .tc-actions {
-    display: flex; gap: 8px; margin-top: 12px; padding-top: 12px;
-    border-top: 1px solid rgba(0,0,0,0.05);
-  }
-
-  .btn-small {
-    flex: 1; padding: 8px 12px; border: none;
-    border-radius: 6px; font-size: 0.75rem; font-weight: 500;
-    cursor: pointer; transition: background 0.2s, color 0.2s;
-    font-family: 'DM Sans', sans-serif;
-    text-align: center;
-  }
-
-  .btn-view {
-    background: rgba(45,122,82,0.1); color: var(--green-mid);
-  }
-
-  .btn-view:hover { background: var(--green-mid); color: white; }
-
-  .btn-delete {
-    background: rgba(220,80,80,0.1); color: #c0504d;
-  }
-
-  .btn-delete:hover { background: #c0504d; color: white; }
-
   .empty-state {
     text-align: center; padding: 60px 20px; color: #bbb;
     display: none;
@@ -263,13 +237,13 @@
     <p class="sidebar-label">Main</p>
     <a href="dashboard.html" class="sidebar-link"><span class="icon">🏠</span> Dashboard</a>
     <a href="showcase.html" class="sidebar-link active"><span class="icon">⭐</span> My Showcase</a>
-    <a href="workshops.html" class="sidebar-link"><span class="icon">📚</span> Workshops</a>
-    <a href="mentors.html" class="sidebar-link"><span class="icon">🤝</span> Mentors</a>
+    <a href="#" class="sidebar-link"><span class="icon">📚</span> Workshops</a>
+    <a href="#" class="sidebar-link"><span class="icon">🤝</span> Mentors</a>
   </div>
   <div class="sidebar-section">
     <p class="sidebar-label">Account</p>
-    <a href="profile.html" class="sidebar-link"><span class="icon">👤</span> Profile</a>
-    <a href="settings.html" class="sidebar-link"><span class="icon">⚙️</span> Settings</a>
+    <a href="#" class="sidebar-link"><span class="icon">👤</span> Profile</a>
+    <a href="#" class="sidebar-link"><span class="icon">⚙️</span> Settings</a>
     <a href="login.html" class="sidebar-link"><span class="icon">🚪</span> Sign Out</a>
   </div>
   <div class="sidebar-bottom">
@@ -339,189 +313,49 @@
 <div class="toast" id="toast">✅ Talent uploaded successfully!</div>
 
 <script>
-  // Check authentication
-  if (!API.isLoggedIn()) {
-    window.location.href = 'login.html';
-  }
-
   const colors = ['color-1','color-2','color-3','color-4'];
-  let currentUser = null;
-  let allTalents = [];
-
-  // Initialize page
-  async function initialize() {
-    try {
-      // Get current user
-      const userData = await API.getMe();
-      currentUser = userData.user;
-      updateUserInfo(userData.user);
-      
-      // Load talents
-      await loadTalents();
-    } catch (error) {
-      console.error('Failed to initialize:', error);
-      if (error.message.includes('expired') || error.message.includes('invalid')) {
-        API.logout();
-      }
-    }
-  }
-
-  function updateUserInfo(user) {
-    const userPill = document.querySelector('.user-pill');
-    const avatar = userPill.querySelector('.user-avatar');
-    const name = userPill.querySelector('.user-name');
-    const role = userPill.querySelector('.user-role');
-
-    avatar.textContent = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-    name.textContent = user.name;
-    role.textContent = user.location || 'Rwanda';
-  }
-
-  // Load talents from API
-  async function loadTalents() {
-    try {
-      const data = await API.getTalents();
-      allTalents = data.talents || [];
-      renderTalents();
-      updateCount();
-    } catch (error) {
-      console.error('Failed to load talents:', error);
-    }
-  }
-
-  // Render talents grid
-  function renderTalents() {
-    const grid = document.getElementById('talentGrid');
-    const emptyState = document.getElementById('emptyState');
-    
-    grid.innerHTML = '';
-
-    if (allTalents.length === 0) {
-      emptyState.style.display = 'block';
-      return;
-    }
-
-    emptyState.style.display = 'none';
-
-    allTalents.forEach((talent, index) => {
-      const color = colors[index % colors.length];
-      const categoryEmoji = talent.category.charAt(0);
-      const isOwner = talent.user_id === currentUser.id;
-
-      const card = document.createElement('div');
-      card.className = 'talent-card';
-      card.id = 'talent-' + talent.id;
-      card.innerHTML = `
-        <div class="talent-card-top ${color}">${categoryEmoji}</div>
-        <div class="talent-card-body">
-          <div class="tc-title">${talent.title}</div>
-          <div class="tc-desc">${talent.description}</div>
-          <div class="tc-footer">
-            <span class="tc-author">by ${talent.author_name}</span>
-            <span class="tc-tag">${talent.category}</span>
-          </div>
-          ${isOwner ? `
-            <div class="tc-actions">
-              <button class="btn-small btn-view" onclick="viewTalent(${talent.id})">View (${talent.views || 0})</button>
-              <button class="btn-small btn-delete" onclick="deleteTalentCard(${talent.id})">🗑️ Delete</button>
-            </div>
-          ` : ''}
-        </div>
-      `;
-
-      grid.appendChild(card);
-    });
-  }
+  let count = 0;
 
   function updateCount() {
     const badge = document.getElementById('countBadge');
-    badge.textContent = allTalents.length + ' talent' + (allTalents.length !== 1 ? 's' : '');
+    badge.textContent = count + ' talent' + (count !== 1 ? 's' : '');
   }
 
-  // View talent details
-  async function viewTalent(talentId) {
-    try {
-      const data = await API.getTalent(talentId);
-      console.log('Talent details:', data.talent);
-      alert(`Views: ${data.talent.views || 0}`);
-    } catch (error) {
-      console.error('Failed to load talent:', error);
-      alert('Could not load talent details');
-    }
-  }
+  updateCount();
 
-  // Delete talent
-  async function deleteTalentCard(talentId) {
-    if (!confirm('Are you sure you want to delete this talent?')) return;
-
-    try {
-      await API.deleteTalent(talentId);
-      
-      // Remove from UI
-      const card = document.getElementById('talent-' + talentId);
-      if (card) {
-        card.style.animation = 'fadeOut 0.3s ease';
-        setTimeout(() => {
-          card.remove();
-          // Reload talents to keep in sync
-          loadTalents();
-        }, 300);
-      }
-
-      showToast('✅ Talent deleted successfully!');
-    } catch (error) {
-      console.error('Failed to delete talent:', error);
-      alert('Could not delete talent: ' + (error.message || 'Unknown error'));
-    }
-  }
-
-  // Show toast notification
-  function showToast(message) {
-    const toast = document.getElementById('toast');
-    toast.textContent = message;
-    toast.classList.add('show');
-    setTimeout(() => toast.classList.remove('show'), 3000);
-  }
-
-  // Handle form submission
-  document.getElementById('talentForm').addEventListener('submit', async function(e) {
+  document.getElementById('talentForm').addEventListener('submit', function(e) {
     e.preventDefault();
     const title = document.getElementById('title').value.trim();
-    const description = document.getElementById('description').value.trim();
-    const category = document.getElementById('category').value;
+    const desc = document.getElementById('description').value.trim();
+    const cat = document.getElementById('category').value;
 
-    if (!title || !description) return;
+    if (!title || !desc) return;
 
-    try {
-      const result = await API.createTalent({
-        title,
-        description,
-        category,
-      });
+    const card = document.createElement('div');
+    card.className = 'talent-card';
+    const color = colors[count % colors.length];
+    card.innerHTML = `
+      <div class="talent-card-top ${color}">${cat.split(' ')[0]}</div>
+      <div class="talent-card-body">
+        <div class="tc-title">${title}</div>
+        <div class="tc-desc">${desc}</div>
+        <div class="tc-footer">
+          <span class="tc-author">by You</span>
+          <span class="tc-tag">${cat}</span>
+        </div>
+      </div>
+    `;
 
-      showToast('✅ Talent uploaded successfully!');
-      this.reset();
-      
-      // Reload talents to show the new one
-      await loadTalents();
-    } catch (error) {
-      console.error('Failed to create talent:', error);
-      alert('Could not upload talent: ' + (error.message || 'Unknown error'));
-    }
+    document.getElementById('talentGrid').prepend(card);
+    document.getElementById('emptyState').style.display = 'none';
+    count++;
+    updateCount();
+    this.reset();
+
+    const toast = document.getElementById('toast');
+    toast.classList.add('show');
+    setTimeout(() => toast.classList.remove('show'), 3000);
   });
-
-  // Add fade out animation
-  const style = document.createElement('style');
-  style.textContent = `
-    @keyframes fadeOut {
-      from { opacity: 1; transform: scale(1); }
-      to { opacity: 0; transform: scale(0.95); }
-    }
-  `;
-  document.head.appendChild(style);
-
-  // Initialize on page load
-  initialize();
 </script>
 
 </body>

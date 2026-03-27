@@ -4,7 +4,7 @@
 const { pool } = require('../config/db');
 const { validationResult } = require('express-validator');
 
-// ── GET /api/mentors  — list all active mentors ──────
+// ── GET /api/mentors — list all active mentors ──────
 async function getAllMentors(req, res) {
   try {
     const [rows] = await pool.query(
@@ -47,7 +47,7 @@ async function getMentorById(req, res) {
   }
 }
 
-// ── POST /api/mentors  (admin only) ─────────────────
+// ── POST /api/mentors (admin only) ─────────────────
 async function createMentor(req, res) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -80,7 +80,7 @@ async function createMentor(req, res) {
   }
 }
 
-// ── PUT /api/mentors/:id  (admin only) ───────────────
+// ── PUT /api/mentors/:id (admin only) ───────────────
 async function updateMentor(req, res) {
   const { name, email, specialty, bio, contact_info, is_active } = req.body;
   const avatar_url = req.file ? `/uploads/${req.file.filename}` : undefined;
@@ -116,7 +116,7 @@ async function updateMentor(req, res) {
   }
 }
 
-// ── DELETE /api/mentors/:id  (admin only) ────────────
+// ── DELETE /api/mentors/:id (admin only) ────────────
 async function deleteMentor(req, res) {
   try {
     const [result] = await pool.query('DELETE FROM mentors WHERE id = ?', [req.params.id]);
