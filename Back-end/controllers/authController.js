@@ -96,6 +96,46 @@ async function login(req, res) {
   }
 }
 
+// ── POST /api/auth/admin (protected, admin-only) ─────
+async function createAdmin(req, res) {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({ success: false, errors: errors.array() });
+  }
+
+  const { name, email, password, location } = req.body;
+
+  try {
+    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
+    if (existing.length > 0) {
+      return res.status(409).json({ success: false, message: 'Email is already registered.' });
+    }
+
+    const hashed = await bcrypt.hash(password, 12);
+    const [result] = await pool.query(
+      'INSERT INTO users (name, email, password, role, location) VALUES (?, ?, ?, ?, ?)',
+      [name, email, hashed, 'admin', location || null]
+    );
+
+    const user = {
+      id: result.insertId,
+      name,
+      email,
+      role: 'admin',
+      location: location || null,
+    };
+
+    return res.status(201).json({
+      success: true,
+      message: 'Admin account created successfully.',
+      user,
+    });
+  } catch (err) {
+    console.error('Create admin error:', err);
+    return res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+  }
+}
+
 // ── GET /api/auth/me  (protected) ────────────────────
 async function getMe(req, res) {
   try {
@@ -113,4 +153,4 @@ async function getMe(req, res) {
   }
 }
 
-module.exports = { register, login, getMe };
+module.exports = { register, login, createAdmin, getMe };

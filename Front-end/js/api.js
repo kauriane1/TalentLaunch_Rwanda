@@ -4,22 +4,29 @@
 const API_BASE = (() => {
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
-  
+
   // For Codespaces: use same hostname with /api proxy
   if (hostname.includes('.app.github.dev')) {
     const port = window.location.port;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
-    return `${baseUrl}/api`;
+    const api = `${baseUrl}/api`;
+    console.log('[API] Codespaces API_BASE:', api);
+    return api;
   }
-  
-  // For local development (Docker: both frontend and backend through nginx on port 3000)
-  // or direct backend access on port 5000
-  if (window.location.port === '3000' || window.location.hostname === 'localhost') {
-    return '/api';  // Use relative path through nginx proxy
+
+  // For local development or docker environment
+  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || window.location.port === '3000') {
+    console.log('[API] Local API_BASE:', '/api');
+    return '/api';
   }
-  
-  return `${protocol}//localhost:5000/api`;
+
+  // Fallback to backend location
+  const fallback = `${protocol}//${hostname}:5000/api`;
+  console.log('[API] Fallback API_BASE:', fallback);
+  return fallback;
 })();
+
+console.log('[API] API_BASE:', API_BASE);
 
 // ─────────────────────────────────────────
 //  UTILITY FUNCTIONS
@@ -115,6 +122,17 @@ async function getMe() {
 async function logout() {
   removeToken();
   window.location.href = 'index.html';
+}
+
+// ─────────────────────────────────────────
+//  ADMIN API
+// ─────────────────────────────────────────
+
+async function createAdmin(adminData) {
+  return apiRequest('/auth/admin', {
+    method: 'POST',
+    body: JSON.stringify(adminData),
+  });
 }
 
 // ─────────────────────────────────────────

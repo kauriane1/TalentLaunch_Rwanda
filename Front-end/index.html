@@ -521,15 +521,15 @@
       </div>
       <div class="hero-stats">
         <div class="stat">
-          <span class="stat-num">500+</span>
+          <span class="stat-num" id="statUsers">0</span>
           <span class="stat-label">Youth Members</span>
         </div>
         <div class="stat">
-          <span class="stat-num">30+</span>
+          <span class="stat-num" id="statMentors">0</span>
           <span class="stat-label">Mentors</span>
         </div>
         <div class="stat">
-          <span class="stat-num">12+</span>
+          <span class="stat-num" id="statWorkshops">0</span>
           <span class="stat-label">Workshops</span>
         </div>
       </div>
@@ -623,6 +623,59 @@
   <a href="index.html" class="nav-logo">Talent<span>Launch</span> Rwanda</a>
   <p>© 2026 TalentLaunch Rwanda. Empowering youth across Rwanda.</p>
 </footer>
+
+<script src="js/api.js"></script>
+<script>
+  async function refreshHomeMetrics() {
+    try {
+      const mentorsRes = await API.getMentors();
+      const workshopsRes = await API.getWorkshops();
+      const talentsRes = await API.getTalents();
+
+      // Users count is best-effort from token/placeholder if not exposed by API
+      const userCount = (talentsRes.talents || []).reduce((unique, t) => {
+        if (!unique.includes(t.user_id)) unique.push(t.user_id);
+        return unique;
+      }, []).length;
+
+      document.getElementById('statUsers').textContent = `${Math.max(userCount, 1)}+`;
+      document.getElementById('statMentors').textContent = `${(mentorsRes.mentors || []).length}+`;
+      document.getElementById('statWorkshops').textContent = `${(workshopsRes.workshops || []).length}+`;
+
+      // Mentors strip cards in home page
+      const mentorsGrid = document.querySelector('.mentor-cards');
+      if (mentorsGrid) {
+        mentorsGrid.innerHTML = '';
+        const mentors = (mentorsRes.mentors || []).slice(0, 3);
+
+        if (mentors.length === 0) {
+          mentorsGrid.innerHTML = '<div class="mentor-card" style="color:white; text-align:center;">No mentors available yet.</div>';
+        } else {
+          mentors.forEach(mentor => {
+            const card = document.createElement('div');
+            card.className = 'mentor-card';
+            const initials = mentor.name.split(' ').map(n => n[0]).join('').toUpperCase();
+            card.innerHTML = `
+              <div class="mentor-avatar">${initials}</div>
+              <div class="mentor-name">${mentor.name}</div>
+              <div class="mentor-role">${mentor.specialty || 'Mentor'}</div>
+            `;
+            mentorsGrid.appendChild(card);
+          });
+        }
+      }
+
+    } catch (err) {
+      console.error('Home metric refresh failed:', err);
+      // Graceful fallback values
+      document.getElementById('statUsers').textContent = '1+';
+      document.getElementById('statMentors').textContent = '0+';
+      document.getElementById('statWorkshops').textContent = '0+';
+    }
+  }
+
+  refreshHomeMetrics();
+</script>
 
 </body>
 </html>

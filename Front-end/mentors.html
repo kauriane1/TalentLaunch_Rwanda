@@ -292,6 +292,20 @@
     <p>Get guidance and support from industry professionals who are passionate about developing talent.</p>
   </div>
 
+  <div id="mentorAdminArea" style="margin-bottom:24px; display:none; background:#fff; border:1px solid #e0e0e0; border-radius:12px; padding:20px;">
+    <h3 style="margin-bottom:12px; font-size:1rem; color:#2D7A52;">Add New Mentor</h3>
+    <form id="addMentorForm">
+      <div style="display:grid; gap:12px; grid-template-columns:1fr 1fr;">
+        <input type="text" id="mentorName" placeholder="Name" required style="padding:10px; border:1px solid #ccc; border-radius:8px;" />
+        <input type="email" id="mentorEmail" placeholder="Email" required style="padding:10px; border:1px solid #ccc; border-radius:8px;" />
+        <input type="text" id="mentorSpecialty" placeholder="Specialty" required style="padding:10px; border:1px solid #ccc; border-radius:8px;" />
+        <input type="text" id="mentorContact" placeholder="Contact info" style="padding:10px; border:1px solid #ccc; border-radius:8px;" />
+      </div>
+      <textarea id="mentorBio" placeholder="Bio" rows="3" style="margin-top:12px; width:100%; padding:10px; border:1px solid #ccc; border-radius:8px;"></textarea>
+      <button type="submit" style="margin-top:12px; background:#1A5C3A; color:#fff; border:none; padding:10px 16px; border-radius:8px; cursor:pointer;">Add Mentor</button>
+    </form>
+  </div>
+
   <div class="mentors-grid" id="mentorsGrid">
     <!-- Cards will be added by JavaScript -->
   </div>
@@ -320,12 +334,56 @@
       const userData = await API.getMe();
       currentUser = userData.user;
       updateUserInfo(userData.user);
+      showAdminArea(userData.user);
+
+      const addForm = document.getElementById('addMentorForm');
+      if (addForm) {
+        addForm.addEventListener('submit', async (e) => {
+          e.preventDefault();
+          await createMentor();
+        });
+      }
+
       await loadMentors();
     } catch (error) {
       console.error('Failed to initialize:', error);
       if (error.message.includes('expired') || error.message.includes('invalid')) {
         API.logout();
       }
+    }
+  }
+
+  function showAdminArea(user) {
+    const adminArea = document.getElementById('mentorAdminArea');
+    if (!adminArea) return;
+
+    if (user.role === 'admin') {
+      adminArea.style.display = 'block';
+    } else {
+      adminArea.style.display = 'none';
+    }
+  }
+
+  async function createMentor() {
+    const name = document.getElementById('mentorName').value.trim();
+    const email = document.getElementById('mentorEmail').value.trim();
+    const specialty = document.getElementById('mentorSpecialty').value.trim();
+    const contact_info = document.getElementById('mentorContact').value.trim();
+    const bio = document.getElementById('mentorBio').value.trim();
+
+    if (!name || !email || !specialty) {
+      showToast('❌ Name, email, and specialty are required.');
+      return;
+    }
+
+    try {
+      await API.createMentor({ name, email, specialty, contact_info, bio });
+      showToast('✅ Mentor added successfully');
+      document.getElementById('addMentorForm').reset();
+      await loadMentors();
+    } catch (error) {
+      console.error('Failed to create mentor:', error);
+      showToast('❌ Failed to add mentor. ' + (error.message || '')); 
     }
   }
 

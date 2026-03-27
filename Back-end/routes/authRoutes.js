@@ -3,8 +3,8 @@
 const express  = require('express');
 const router   = express.Router();
 const { body } = require('express-validator');
-const { register, login, getMe } = require('../controllers/authController');
-const { protect } = require('../middleware/auth');
+const { register, login, createAdmin, getMe } = require('../controllers/authController');
+const { protect, adminOnly } = require('../middleware/auth');
 
 // Validation rules
 const registerRules = [
@@ -20,6 +20,7 @@ const loginRules = [
 
 router.post('/register', registerRules, register);
 router.post('/login',    loginRules,    login);
+router.post('/admin',    protect, adminOnly, registerRules, createAdmin);
 router.get('/me',        protect,       getMe);
 
 module.exports = router;
