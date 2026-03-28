@@ -15,10 +15,10 @@ A simple full-stack web app for Rwandan talent discovery.
    docker-compose up -d --build
    ```
 3. Verify:
-   - Frontend: http://localhost:3000
-   - API: http://localhost:5000/api/health
+   - Frontend: https://improved-parakeet-q74p7qq54pwx26xwq-3000.app.github.dev/
+   - API: https://improved-parakeet-q74p7qq54pwx26xwq-5000.app.github.dev/api/health
 4. Open the app in browser:
-   - http://localhost:3000/login.html
+   - https://improved-parakeet-q74p7qq54pwx26xwq-3000.app.github.dev/login.html
 
 ## Admin account (pre-seeded)
 
