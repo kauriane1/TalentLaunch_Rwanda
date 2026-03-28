@@ -352,10 +352,18 @@
       }
     });
 
-    // Check if already logged in
-    if (API.isLoggedIn()) {
-      window.location.href = 'Dashboard.html';
-    }
+    // Check if already logged in (validate token with backend)
+    (async function() {
+      if (!API.isLoggedIn()) return;
+
+      try {
+        await API.getMe();
+        window.location.href = 'Dashboard.html';
+      } catch (err) {
+        // Token invalid/expired -> clear and remain on login
+        API.logout();
+      }
+    })();
   </script>
 </body>
 </html>

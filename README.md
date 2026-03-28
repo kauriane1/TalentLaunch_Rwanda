@@ -161,7 +161,24 @@ This creates the `talentlaunch` database with these 5 tables:
 
 ## ▶️ Running the Project
 
-### Start the backend
+### Start with Docker Compose (recommended)
+
+From the root project folder:
+
+```bash
+docker-compose up -d --build
+```
+
+This starts:
+- MySQL on `localhost:3306`
+- Backend API on `localhost:5000`
+- Frontend (nginx) on `localhost:3000`
+
+Then visit:
+- `http://localhost:3000` (app UI)
+- `http://localhost:3000/admin.html` (admin dashboard)
+
+### Start the backend (manual)
 
 Inside the `talentlaunch-backend/` folder:
 
