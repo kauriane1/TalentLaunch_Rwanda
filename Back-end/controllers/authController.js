@@ -153,4 +153,65 @@ async function getMe(req, res) {
   }
 }
 
-module.exports = { register, login, createAdmin, getMe };
+// ── PUT /api/auth/me (protected): update profile, including avatar
+async function updateProfile(req, res) {
+  try {
+    const { name, email, location, bio } = req.body;
+    const avatar_url = req.file ? `/uploads/${req.file.filename}` : undefined;
+
+    if (!name || !email) {
+      return res.status(400).json({ success: false, message: 'Name and email are required.' });
+    }
+
+    const [currentRows] = await pool.query('SELECT id, email FROM users WHERE id = ?', [req.user.id]);
+    if (currentRows.length === 0) {
+      return res.status(404).json({ success: false, message: 'User not found.' });
+    }
+
+    const currentUser = currentRows[0];
+
+    if (email !== currentUser.email) {
+      const [emailCheck] = await pool.query('SELECT id FROM users WHERE email = ? AND id != ?', [email, req.user.id]);
+      if (emailCheck.length > 0) {
+        return res.status(409).json({ success: false, message: 'Email is already in use by another account.' });
+      }
+    }
+
+    const fields = [];
+    const values = [];
+
+    fields.push('name = ?'); values.push(name);
+    fields.push('email = ?'); values.push(email);
+    fields.push('location = ?'); values.push(location || null);
+    fields.push('bio = ?'); values.push(bio || null);
+
+    if (avatar_url !== undefined) {
+      fields.push('avatar_url = ?');
+      values.push(avatar_url);
+    }
+
+    values.push(req.user.id);
+
+    await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+
+    const [updatedRows] = await pool.query(
+      'SELECT id, name, email, role, location, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?',
+      [req.user.id]
+    );
+
+    const updatedUser = updatedRows[0];
+    const newToken = signToken(updatedUser);
+
+    return res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      token: newToken,
+      user: updatedUser,
+    });
+  } catch (err) {
+    console.error('UpdateProfile error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+}
+
+module.exports = { register, login, createAdmin, getMe, updateProfile };

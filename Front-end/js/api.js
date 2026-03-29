@@ -55,11 +55,18 @@ function isLoggedIn() {
 // Make authenticated API request
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
+
+  const isMultipart = options.body instanceof FormData;
+  const headers = {
+    ...options.headers,
+  };
+
+  if (!isMultipart) {
+    headers['Content-Type'] = 'application/json';
+  }
+
   const config = {
-    headers: {
-      'Content-Type': 'application/json',
-      ...options.headers,
-    },
+    headers,
     ...options,
   };
 
@@ -122,6 +129,24 @@ async function getMe() {
 async function logout() {
   removeToken();
   window.location.href = 'index.html';
+}
+
+async function updateProfile(profileData, avatarFile) {
+  const formData = new FormData();
+  Object.keys(profileData).forEach(key => {
+    if (profileData[key] !== undefined && profileData[key] !== null) {
+      formData.append(key, profileData[key]);
+    }
+  });
+  if (avatarFile) {
+    formData.append('avatar', avatarFile);
+  }
+
+  return apiRequest('/auth/me', {
+    method: 'PUT',
+    headers: {},
+    body: formData,
+  });
 }
 
 // ─────────────────────────────────────────
@@ -189,9 +214,8 @@ async function deleteMentor(id) {
 //  WORKSHOPS API
 // ─────────────────────────────────────────
 
-async function getWorkshops(status) {
-  const query = status ? `?status=${status}` : '';
-  return apiRequest(`/workshops${query}`);
+async function getMyWorkshops() {
+  return apiRequest('/workshops/my');
 }
 
 async function getWorkshop(id) {
@@ -288,6 +312,7 @@ window.API = {
   register,
   login,
   getMe,
+  updateProfile,
   logout,
   isLoggedIn,
 
@@ -301,6 +326,7 @@ window.API = {
   // Workshops
   getWorkshops,
   getWorkshop,
+  getMyWorkshops,
   createWorkshop,
   updateWorkshop,
   deleteWorkshop,
@@ -316,4 +342,7 @@ window.API = {
 
   // Utils
   healthCheck,
+
+  // Token utilities
+  setToken,
 };

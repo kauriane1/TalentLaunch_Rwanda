@@ -151,6 +151,13 @@
     justify-content: center;
     font-size: 3rem;
     margin: 0 auto 20px;
+    overflow: hidden;
+  }
+
+  .profile-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
   }
 
   .profile-name {
@@ -399,7 +406,13 @@
     const name = userPill.querySelector('.user-name');
     const role = userPill.querySelector('.user-role');
 
-    avatar.textContent = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    if (user.avatar_url) {
+      avatar.innerHTML = `<img src="${user.avatar_url}" alt="${user.name} avatar">`;
+    } else {
+      avatar.textContent = initials;
+    }
+
     name.textContent = user.name;
     role.textContent = user.location || 'Rwanda';
   }
@@ -407,7 +420,13 @@
   function loadProfileData(user) {
     // Header info
     const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
-    document.getElementById('avatar').textContent = initials;
+    const avatar = document.getElementById('avatar');
+    if (user.avatar_url) {
+      avatar.innerHTML = `<img src="${user.avatar_url}" alt="${user.name} avatar">`;
+    } else {
+      avatar.textContent = initials;
+    }
+
     document.getElementById('profileName').textContent = user.name;
     document.getElementById('profileRole').textContent = user.location || 'Rwanda';
 
@@ -443,6 +462,12 @@
   function goToSettings() {
     window.location.href = 'settings.html';
   }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'profile_updated') {
+      initialize();
+    }
+  });
 
   function showToast(message) {
     const toast = document.getElementById('toast');

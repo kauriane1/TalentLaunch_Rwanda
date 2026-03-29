@@ -144,12 +144,6 @@
     <p>Only users with the admin role can access and manage mentors and workshops here.</p>
   </div>
 
-  <div class="info">
-    Default admin credentials (create in database): <br>
-    email <strong>admin@talentlaunch.rw</strong>, password <strong>Admin1234</strong> <br>
-    SQL password hash (bcrypt): <code>$2a$12$P6Z8/MmrqiZsnQ3JrZeLEemX95ogZea0DJi9ZcTMR5t.XbSUOUOaK</code>
-  </div>
-
   <div class="grid-2">
     <div class="card">
       <h2>Mentor Management</h2>
@@ -157,6 +151,8 @@
         <input type="text" id="mtName" placeholder="Name" required />
         <input type="email" id="mtEmail" placeholder="Email" required />
         <input type="text" id="mtSpecialty" placeholder="Specialty" required />
+        <label style="font-size:0.8rem;margin-top:8px;color:#555;">Mentor avatar (optional)</label>
+        <input type="file" id="mtAvatar" accept="image/*" />
         <input type="text" id="mtContact" placeholder="Contact info" />
         <textarea id="mtBio" placeholder="Bio" rows="3"></textarea>
         <button type="submit">Add Mentor</button>
@@ -181,17 +177,6 @@
         <button type="submit">Add Workshop</button>
       </form>
     </div>
-  </div>
-
-  <div class="card" style="margin-bottom: 24px;">
-    <h2>Admin Account Creation</h2>
-    <form id="adminForm" style="display: grid; grid-template-columns: repeat(auto-fit,minmax(180px,1fr)); gap: 10px;">
-      <input type="text" id="adName" placeholder="Name" required />
-      <input type="email" id="adEmail" placeholder="Email" required />
-      <input type="password" id="adPassword" placeholder="Password" required minlength="6" />
-      <input type="text" id="adLocation" placeholder="Location" />
-      <button type="submit" style="grid-column: 1 / -1;">Create Admin</button>
-    </form>
   </div>
 
   <div class="grid-2">
@@ -295,10 +280,15 @@
     }
 
     try {
-      await API.createMentor({ name, email, specialty, contact_info, bio });
+      const avatarFile = document.getElementById('mtAvatar').files[0];
+      await API.createMentor({ name, email, specialty, contact_info, bio }, avatarFile);
       showToast('Mentor added');
       document.getElementById('mentorForm').reset();
+      localStorage.setItem('mentor_updated', Date.now());
       await refreshData();
+
+      // Cross-tab update for users viewing mentor lists
+      window.dispatchEvent(new StorageEvent('storage', { key: 'mentor_updated', newValue: String(Date.now()) }));
     } catch (err) {
       console.error(err);
       showToast('Failed to add mentor');
@@ -327,37 +317,12 @@
       await API.createWorkshop(payload);
       showToast('Workshop added');
       document.getElementById('workshopForm').reset();
+      localStorage.setItem('workshop_updated', Date.now());
+      window.dispatchEvent(new StorageEvent('storage', { key: 'workshop_updated', newValue: String(Date.now()) }));
       await refreshData();
     } catch (err) {
       console.error(err);
       showToast('Failed to add workshop');
-    }
-  }
-
-  async function createAdminUser(event) {
-    event.preventDefault();
-
-    const name = document.getElementById('adName').value.trim();
-    const email = document.getElementById('adEmail').value.trim();
-    const password = document.getElementById('adPassword').value;
-    const location = document.getElementById('adLocation').value.trim();
-
-    if (!name || !email || !password) {
-      showToast('Name, email, and password are required for admin creation');
-      return;
-    }
-
-    try {
-      const data = await API.createAdmin({ name, email, password, location });
-      if (data.success) {
-        showToast('Admin created successfully');
-        document.getElementById('adminForm').reset();
-      } else {
-        showToast(data.message || 'Failed to create admin');
-      }
-    } catch (err) {
-      console.error(err);
-      showToast(err.message || 'Failed to create admin');
     }
   }
 
@@ -389,7 +354,6 @@
 
     document.getElementById('mentorForm').addEventListener('submit', addMentor);
     document.getElementById('workshopForm').addEventListener('submit', addWorkshop);
-    document.getElementById('adminForm').addEventListener('submit', createAdminUser);
     document.getElementById('mentorsTable').addEventListener('click', handleDelete);
     document.getElementById('workshopsTable').addEventListener('click', handleDelete);
   });

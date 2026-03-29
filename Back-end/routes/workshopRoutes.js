@@ -4,7 +4,7 @@ const express  = require('express');
 const router   = express.Router();
 const { body } = require('express-validator');
 const {
-  getAllWorkshops, getWorkshopById,
+  getAllWorkshops, getWorkshopById, getMyWorkshops,
   createWorkshop, updateWorkshop, deleteWorkshop,
   enrollInWorkshop, unenrollFromWorkshop,
 } = require('../controllers/workshopController');
@@ -20,12 +20,8 @@ const workshopRules = [
 router.get('/',    getAllWorkshops);
 router.get('/:id', getWorkshopById);
 
-// Admin only
-router.post('/',    protect, adminOnly, workshopRules, createWorkshop);
-router.put('/:id',  protect, adminOnly, updateWorkshop);
-router.delete('/:id', protect, adminOnly, deleteWorkshop);
-
 // Authenticated users
+router.get('/my',   protect, getMyWorkshops);
 router.post('/:id/enroll',   protect, enrollInWorkshop);
 router.delete('/:id/enroll', protect, unenrollFromWorkshop);
 

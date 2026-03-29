@@ -132,6 +132,35 @@
 
   .topbar-greeting p { color: #888; font-size: 0.9rem; margin-top: 4px; font-weight: 300; }
 
+  .topbar-right {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+
+  .user-avatar-top {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, var(--green-mid), var(--gold));
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.9rem;
+    color: white;
+    font-weight: 600;
+    cursor: pointer;
+    border: 2px solid white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+  }
+
+  .user-avatar-top img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+  }
+
   .topbar-btn {
     background: var(--green);
     color: white;
@@ -392,7 +421,10 @@
       <h1>Good morning! 👋</h1>
       <p>Here's what's happening on TalentLaunch today.</p>
     </div>
-    <a href="showcase.html" class="topbar-btn">+ Upload Talent</a>
+    <div class="topbar-right">
+      <div class="user-avatar-top" onclick="window.location.href='profile.html'">U</div>
+      <a href="showcase.html" class="topbar-btn">Go to Showcase →</a>
+    </div>
   </div>
 
   <!-- STATS -->
@@ -454,8 +486,8 @@
 
     <div class="panel">
       <div class="panel-header">
-        <span class="panel-title">Your Mentors</span>
-        <a href="mentors.html" class="panel-link">Find more →</a>
+        <span class="panel-title">Mentors</span>
+        <a href="mentors.html" class="panel-link">View more →</a>
       </div>
       <div style="text-align:center; padding: 40px 20px; color: #bbb;">
         <div style="font-size:2.5rem; margin-bottom:12px;">🤝</div>
@@ -511,9 +543,23 @@
     const name = userPill.querySelector('.user-name');
     const role = userPill.querySelector('.user-role');
 
-    avatar.textContent = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    if (user.avatar_url) {
+      avatar.innerHTML = `<img src="${user.avatar_url}" alt="${user.name} avatar">`;
+    } else {
+      avatar.textContent = initials;
+    }
+
     name.textContent = user.name;
     role.textContent = user.location || 'Rwanda';
+
+    // Update topbar avatar
+    const topAvatar = document.querySelector('.user-avatar-top');
+    if (user.avatar_url) {
+      topAvatar.innerHTML = `<img src="${user.avatar_url}" alt="${user.name} avatar">`;
+    } else {
+      topAvatar.textContent = initials;
+    }
 
     // Update greeting
     const greeting = document.querySelector('.topbar-greeting h1');
@@ -526,22 +572,24 @@
 
   async function loadStats() {
     try {
-      // Get workshops
-      const workshops = await API.getWorkshops();
-      const enrolledWorkshops = workshops.workshops.filter(w => w.enrolled_count > 0); // This is simplified - in reality you'd check user's enrollments
+      const userData = await API.getMe();
+      const user = userData.user;
 
-      // Get talents
+      // Get user's enrolled workshops
+      const myWorkshops = await API.getMyWorkshops();
+
+      // Get user's talents
       const talents = await API.getTalents();
-      const userTalents = talents.talents.filter(t => t.user_id === (await API.getMe()).user.id);
+      const userTalents = talents.talents.filter(t => t.user_id === user.id);
 
-      // Get mentors
+      // Get total mentors
       const mentors = await API.getMentors();
 
       // Update stats
-      document.querySelector('.stat-card:nth-child(1) .stat-card-num').textContent = enrolledWorkshops.length;
-      document.querySelector('.stat-card:nth-child(2) .stat-card-num').textContent = userTalents.length;
-      document.querySelector('.stat-card:nth-child(3) .stat-card-num').textContent = userTalents.reduce((sum, t) => sum + (t.views || 0), 0);
-      document.querySelector('.stat-card:nth-child(4) .stat-card-num').textContent = mentors.count;
+      document.getElementById('d-workshops').textContent = myWorkshops.workshops.length;
+      document.getElementById('d-talents').textContent = userTalents.length;
+      document.getElementById('d-views').textContent = userTalents.reduce((sum, t) => sum + (t.views || 0), 0);
+      document.getElementById('d-mentors').textContent = mentors.mentors.length;
 
     } catch (error) {
       console.error('Failed to load stats:', error);
@@ -604,13 +652,18 @@
 
       let html = '';
       mentors.forEach(mentor => {
+        const avatarHtml = mentor.avatar_url
+          ? `<img src="${mentor.avatar_url}" alt="${mentor.name}">`
+          : mentor.name.split(' ').map(n => n[0]).join('');
+
         html += `
-          <div class="mentor-item">
-            <div class="mentor-avatar" style="background-image: url('${mentor.avatar_url || ''}')">${!mentor.avatar_url ? mentor.name.split(' ').map(n => n[0]).join('') : ''}</div>
+          <div class="mentor-row">
+            <div class="mentor-av">${avatarHtml}</div>
             <div class="mentor-info">
-              <div class="mentor-name">${mentor.name}</div>
-              <div class="mentor-specialty">${mentor.specialty}</div>
+              <div class="mentor-nm">${mentor.name}</div>
+              <div class="mentor-sp">${mentor.specialty}</div>
             </div>
+            <button class="mentor-btn" onclick="window.location.href='mentors.html'">View</button>
           </div>
         `;
       });

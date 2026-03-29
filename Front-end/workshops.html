@@ -354,10 +354,10 @@
   </div>
 
   <div class="filter-bar">
-    <button class="filter-btn active" onclick="filterWorkshops('all')">All Workshops</button>
-    <button class="filter-btn" onclick="filterWorkshops('upcoming')">Upcoming</button>
-    <button class="filter-btn" onclick="filterWorkshops('live')">Live Now</button>
-    <button class="filter-btn" onclick="filterWorkshops('completed')">Completed</button>
+    <button class="filter-btn active" onclick="filterWorkshops('all', event)">All Workshops</button>
+    <button class="filter-btn" onclick="filterWorkshops('upcoming', event)">Upcoming</button>
+    <button class="filter-btn" onclick="filterWorkshops('live', event)">Live Now</button>
+    <button class="filter-btn" onclick="filterWorkshops('completed', event)">Completed</button>
   </div>
 
   <div class="workshops-grid" id="workshopsGrid">
@@ -404,7 +404,13 @@
     const name = userPill.querySelector('.user-name');
     const role = userPill.querySelector('.user-role');
 
-    avatar.textContent = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    if (user.avatar_url) {
+      avatar.innerHTML = `<img src="${user.avatar_url}" alt="${user.name} avatar">`;
+    } else {
+      avatar.textContent = initials;
+    }
+
     name.textContent = user.name;
     role.textContent = user.location || 'Rwanda';
   }
@@ -479,17 +485,25 @@
     });
   }
 
-  function filterWorkshops(status) {
+  function filterWorkshops(status, event) {
     currentFilter = status;
     
     // Update UI
     document.querySelectorAll('.filter-btn').forEach(btn => {
       btn.classList.remove('active');
     });
-    event.target.classList.add('active');
+    if (event?.target) {
+      event.target.classList.add('active');
+    }
 
     renderWorkshops();
   }
+
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'workshop_updated') {
+      loadWorkshops();
+    }
+  });
 
   async function enrollWorkshop(workshopId) {
     try {

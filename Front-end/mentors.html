@@ -155,6 +155,25 @@
     font-size: 3rem;
   }
 
+  .mentor-avatar {
+    width: 72px;
+    height: 72px;
+    border-radius: 50%;
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.6rem;
+    color: white;
+    background: rgba(0,0,0,0.2);
+  }
+
+  .mentor-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
   .mentor-body {
     padding: 24px;
     flex: 1;
@@ -393,7 +412,13 @@
     const name = userPill.querySelector('.user-name');
     const role = userPill.querySelector('.user-role');
 
-    avatar.textContent = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    if (user.avatar_url) {
+      avatar.innerHTML = `<img src="${user.avatar_url}" alt="${user.name} avatar">`;
+    } else {
+      avatar.textContent = initials;
+    }
+
     name.textContent = user.name;
     role.textContent = user.location || 'Rwanda';
   }
@@ -425,8 +450,12 @@
       const card = document.createElement('div');
       card.className = 'mentor-card';
       
+      const avatarHtml = mentor.avatar_url
+        ? `<img class="mentor-avatar" src="${mentor.avatar_url}" alt="${mentor.name} avatar" />`
+        : '<div class="mentor-avatar">🎓</div>';
+
       card.innerHTML = `
-        <div class="mentor-header">🎓</div>
+        <div class="mentor-header">${avatarHtml}</div>
         <div class="mentor-body">
           <div class="mentor-name">${mentor.name}</div>
           <div class="mentor-specialty">${mentor.specialty}</div>
@@ -462,6 +491,12 @@
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
+
+  window.addEventListener('storage', (event) => {
+    if (event.key === 'mentor_updated') {
+      loadMentors();
+    }
+  });
 
   initialize();
 </script>

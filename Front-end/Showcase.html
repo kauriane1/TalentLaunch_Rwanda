@@ -372,7 +372,13 @@
     const name = userPill.querySelector('.user-name');
     const role = userPill.querySelector('.user-role');
 
-    avatar.textContent = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    const initials = user.name.split(' ').map(n => n[0]).join('').toUpperCase();
+    if (user.avatar_url) {
+      avatar.innerHTML = `<img src="${user.avatar_url}" alt="${user.name} avatar">`;
+    } else {
+      avatar.textContent = initials;
+    }
+
     name.textContent = user.name;
     role.textContent = user.location || 'Rwanda';
   }

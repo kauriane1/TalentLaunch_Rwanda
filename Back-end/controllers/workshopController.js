@@ -190,8 +190,32 @@ async function unenrollFromWorkshop(req, res) {
   }
 }
 
+// ── GET /api/workshops/my (protected) — get user's enrolled workshops ─────
+async function getMyWorkshops(req, res) {
+  try {
+    const userId = req.user.id;
+
+    const [rows] = await pool.query(
+      `SELECT w.id, w.title, w.description, w.date, w.location,
+              w.capacity, w.status,
+              m.id AS mentor_id, m.name AS mentor_name, m.specialty AS mentor_specialty
+       FROM workshops w
+       LEFT JOIN mentors m ON m.id = w.mentor_id
+       INNER JOIN workshop_enrollments e ON e.workshop_id = w.id AND e.user_id = ?
+       ORDER BY w.date ASC`,
+      [userId]
+    );
+
+    return res.status(200).json({ success: true, count: rows.length, workshops: rows });
+  } catch (err) {
+    console.error('GetMyWorkshops error:', err);
+    return res.status(500).json({ success: false, message: 'Server error.' });
+  }
+}
+
 module.exports = {
-  getAllWorkshops, getWorkshopById,
+  getAllWorkshops, getWorkshopById, getMyWorkshops,
   createWorkshop, updateWorkshop, deleteWorkshop,
   enrollInWorkshop, unenrollFromWorkshop,
 };
+}

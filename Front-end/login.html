@@ -298,9 +298,10 @@
         const result = await API.login({ email, password });
         document.getElementById('loginSuccess').textContent = 'Login successful! Redirecting...';
 
-        // Redirect to dashboard
+        // Redirect based on role
+        const redirectUrl = result.user.role === 'admin' ? 'admin.html' : 'Dashboard.html';
         setTimeout(() => {
-          window.location.href = 'Dashboard.html';
+          window.location.href = redirectUrl;
         }, 1000);
       } catch (error) {
         document.getElementById('loginPasswordError').textContent = error.message;
