@@ -218,4 +218,3 @@ module.exports = {
   createWorkshop, updateWorkshop, deleteWorkshop,
   enrollInWorkshop, unenrollFromWorkshop,
 };
-}
