@@ -113,8 +113,8 @@
     <p>Get guidance and support from industry professionals who are passionate about developing talent.</p>
   </div>
 
-  <!-- Admin-only: shown/hidden by JS -->
-  <div class="admin-panel" id="adminPanel" style="display:none;">
+  <!-- Admin-only: youth members never see this (hidden + role check in JS; API also rejects non-admins) -->
+  <div class="admin-panel" id="adminPanel" hidden>
     <h3>Add New Mentor</h3>
     <form id="addMentorForm">
       <input type="text"  id="mtName"     placeholder="Name"         required />
@@ -146,16 +146,31 @@
     setTimeout(() => t.classList.remove('show'), 3000);
   }
 
+  function isAdminUser(user) {
+    return user && String(user.role || '').toLowerCase() === 'admin';
+  }
+
+  function setMentorAdminUI(user) {
+    const panel = document.getElementById('adminPanel');
+    const form = document.getElementById('addMentorForm');
+    if (isAdminUser(user)) {
+      panel.hidden = false;
+      if (!form.dataset.submitBound) {
+        form.addEventListener('submit', addMentor);
+        form.dataset.submitBound = '1';
+      }
+    } else {
+      panel.hidden = true;
+    }
+  }
+
   async function initialize() {
     if (!API.isLoggedIn()) { window.location.href = 'login.html'; return; }
     try {
       const userData = await API.getMe();
       currentUser = userData.user;
       updateSidebar(userData.user);
-      if (userData.user.role === 'admin') {
-        document.getElementById('adminPanel').style.display = 'block';
-        document.getElementById('addMentorForm').addEventListener('submit', addMentor);
-      }
+      setMentorAdminUI(userData.user);
       await loadMentors();
     } catch (err) {
       console.error(err);
@@ -213,6 +228,10 @@
 
   async function addMentor(e) {
     e.preventDefault();
+    if (!isAdminUser(currentUser)) {
+      showToast('❌ Only admins can add mentors.');
+      return;
+    }
     const name        = document.getElementById('mtName').value.trim();
     const email       = document.getElementById('mtEmail').value.trim();
     const specialty   = document.getElementById('mtSpecialty').value.trim();
