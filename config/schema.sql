@@ -1,14 +1,6 @@
--- ═══════════════════════════════════════════════════
---  TalentLaunch Rwanda — PostgreSQL Database Schema
---  Run this file once to set up all tables in Postgres:
---    psql $DATABASE_URL -f Back-end/config/schema.sql
--- ═══════════════════════════════════════════════════
+-- TalentLaunch Rwanda — PostgreSQL Database Schema
+-- Paste this into Render's PostgreSQL shell to create all tables
 
--- Create database manually if required; Render/Neon typically provides the DB.
-
--- ─────────────────────────────────────
---  USERS
--- ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS users (
   id           SERIAL PRIMARY KEY,
   name         VARCHAR(100) NOT NULL,
@@ -24,9 +16,6 @@ CREATE TABLE IF NOT EXISTS users (
 
 CREATE INDEX IF NOT EXISTS idx_users_email ON users(email);
 
--- ─────────────────────────────────────
---  MENTORS
--- ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS mentors (
   id           SERIAL PRIMARY KEY,
   name         VARCHAR(100) NOT NULL,
@@ -40,9 +29,6 @@ CREATE TABLE IF NOT EXISTS mentors (
   updated_at   TIMESTAMP    NOT NULL DEFAULT CURRENT_TIMESTAMP
 );
 
--- ─────────────────────────────────────
---  WORKSHOPS
--- ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS workshops (
   id           SERIAL PRIMARY KEY,
   title        VARCHAR(200) NOT NULL,
@@ -57,9 +43,6 @@ CREATE TABLE IF NOT EXISTS workshops (
   FOREIGN KEY (mentor_id) REFERENCES mentors(id) ON DELETE SET NULL
 );
 
--- ─────────────────────────────────────
---  WORKSHOP ENROLLMENTS
--- ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS workshop_enrollments (
   id           SERIAL PRIMARY KEY,
   user_id      INT       NOT NULL,
@@ -70,9 +53,6 @@ CREATE TABLE IF NOT EXISTS workshop_enrollments (
   FOREIGN KEY (workshop_id) REFERENCES workshops(id) ON DELETE CASCADE
 );
 
--- ─────────────────────────────────────
---  TALENT SHOWCASE
--- ─────────────────────────────────────
 CREATE TABLE IF NOT EXISTS talents (
   id           SERIAL PRIMARY KEY,
   user_id      INT          NOT NULL,
@@ -88,4 +68,4 @@ CREATE TABLE IF NOT EXISTS talents (
 );
 
 CREATE INDEX IF NOT EXISTS idx_talents_category ON talents(category);
-CREATE INDEX IF NOT EXISTS idx_talents_user ON talents(user_id);
+CREATE INDEX IF NOT EXISTS idx_talents_user     ON talents(user_id);
