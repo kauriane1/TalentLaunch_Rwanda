@@ -37,7 +37,7 @@ async function register(req, res) {
 
     // Insert user
     const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, location) VALUES (?, ?, ?, ?)',
+      'INSERT INTO users (name, email, password, location) VALUES (?, ?, ?, ?) RETURNING id',
       [name, email, hashed, location || null]
     );
 
@@ -113,7 +113,7 @@ async function createAdmin(req, res) {
 
     const hashed = await bcrypt.hash(password, 12);
     const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, role, location) VALUES (?, ?, ?, ?, ?)',
+      'INSERT INTO users (name, email, password, role, location) VALUES (?, ?, ?, ?, ?) RETURNING id',
       [name, email, hashed, 'admin', location || null]
     );
 

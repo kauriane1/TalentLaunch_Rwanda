@@ -67,7 +67,7 @@ async function createWorkshop(req, res) {
   try {
     const [result] = await pool.query(
       `INSERT INTO workshops (title, description, mentor_id, date, location, capacity)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
       [title, description, mentor_id || null, date, location || null, capacity || 30]
     );
 
@@ -165,7 +165,7 @@ async function enrollInWorkshop(req, res) {
 
     return res.status(201).json({ success: true, message: 'Enrolled successfully!' });
   } catch (err) {
-    if (err.code === 'ER_DUP_ENTRY') {
+    if (err.code === '23505') {
       return res.status(409).json({ success: false, message: 'You are already enrolled in this workshop.' });
     }
     console.error('EnrollInWorkshop error:', err);

@@ -71,7 +71,7 @@ async function createTalent(req, res) {
   try {
     const [result] = await pool.query(
       `INSERT INTO talents (user_id, title, description, category, file_url, file_type)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
       [req.user.id, title, description, category, file_url, file_type]
     );
 

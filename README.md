@@ -3,31 +3,32 @@
 A simple full-stack web app for Rwandan talent discovery.
 
 - Frontend: HTML/CSS/JS (admin/dashboard/showcase)
-- Backend: Node.js + Express + MySQL
+- Backend: Node.js + Express + PostgreSQL (Neon / Render)
 - Auth: JWT + role-based admin protection
 
 ## Quick start (local)
 
-1. Ensure Docker is running.
-2. In project root:
+1. Install dependencies in the backend folder:
    ```bash
-   docker-compose down
-   docker-compose up -d --build
+   cd Back-end
+   npm install
    ```
-3. Verify:
-   - Frontend: https://improved-parakeet-q74p7qq54pwx26xwq-3000.app.github.dev/
-   - API: https://improved-parakeet-q74p7qq54pwx26xwq-5000.app.github.dev/api/health
-4. Open the app in browser:
-   - https://improved-parakeet-q74p7qq54pwx26xwq-3000.app.github.dev/login.html
+2. Create a local Postgres database and set `DATABASE_URL` or Postgres env vars in `Back-end/.env`.
+3. Start the API locally:
+   ```bash
+   npm start
+   ```
+4. The backend will be available at `http://localhost:5000/api/health`.
+
+> For deployment, use Render or any Node.js/Postgres hosting with `DATABASE_URL` set to your Neon connection string.
 
 ## Admin account (pre-seeded)
 
 - Email: `admin@talentlaunch.rw`
 - Password: `Admin1234`
 
-> If not present, run once in MySQL:
+> If not present, run once in Postgres:
 > ```sql
-> USE talentlaunch;
 > INSERT INTO users (name,email,password,role,location)
 > VALUES ('Admin User','admin@talentlaunch.rw','$2a$12$8lgiZNKr1.4UYAlvQ6M2duAgaP0HcXiQNrqBaxjsiWSIdbZY5wwL.','admin','Kigali');
 > ```
@@ -47,12 +48,6 @@ A simple full-stack web app for Rwandan talent discovery.
 - `GET /api/mentors`, `POST /api/mentors` (admin)
 - `GET /api/workshops`, `POST /api/workshops` (admin)
 - `GET /api/talents`, `POST /api/talents` (user)
-
-## Docker cleanup
-
-```bash
-docker-compose down
-```
 
 ## Notes
 

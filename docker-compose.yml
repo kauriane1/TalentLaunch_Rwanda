@@ -1,3 +1,4 @@
+# Legacy Docker compose file. Deployment now targets Render / PostgreSQL.
 version: '3.8'
 
 services:

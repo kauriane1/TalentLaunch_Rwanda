@@ -1,28 +1,50 @@
 // config/db.js
-// MySQL connection pool using mysql2/promise
+// PostgreSQL connection pool for Neon / Render / local Postgres
 
-const mysql = require('mysql2/promise');
+const { Pool } = require('pg');
 require('dotenv').config();
 
-const pool = mysql.createPool({
-  host:     process.env.DB_HOST     || 'localhost',
-  port:     process.env.DB_PORT     || 3306,
-  database: process.env.DB_NAME     || 'talentlaunch',
-  user:     process.env.DB_USER     || 'root',
-  password: process.env.DB_PASSWORD || '',
-  waitForConnections: true,
-  connectionLimit:    10,
-  queueLimit:         0,
+const connectionString = process.env.DATABASE_URL || null;
+const pool = new Pool({
+  connectionString: connectionString || undefined,
+  host: connectionString ? undefined : process.env.DB_HOST || 'localhost',
+  port: connectionString ? undefined : process.env.DB_PORT || 5432,
+  database: connectionString ? undefined : process.env.DB_NAME || 'talentlaunch',
+  user: connectionString ? undefined : process.env.DB_USER || 'postgres',
+  password: connectionString ? undefined : process.env.DB_PASSWORD || '',
+  ssl: connectionString
+    ? { rejectUnauthorized: false }
+    : false,
+  max: 10,
 });
+
+function convertToPgParams(sql, params = []) {
+  let index = 0;
+  const text = sql.replace(/\?/g, () => `$${++index}`);
+  return { text, values: params };
+}
+
+const originalQuery = pool.query.bind(pool);
+
+pool.query = async (sql, params = []) => {
+  const { text, values } = convertToPgParams(sql, params);
+  const result = await originalQuery(text, values);
+  const exposed = {
+    ...result,
+    insertId: result.command === 'INSERT' && result.rows[0] ? result.rows[0].id : null,
+    affectedRows: result.rowCount,
+  };
+  return [result.rows, exposed];
+};
 
 // Test the connection on startup
 async function testConnection() {
   try {
-    const conn = await pool.getConnection();
-    console.log('✅  MySQL connected successfully');
-    conn.release();
+    const client = await pool.connect();
+    console.log('✅  PostgreSQL connected successfully');
+    client.release();
   } catch (err) {
-    console.error('❌  MySQL connection failed:', err.message);
+    console.error('❌  PostgreSQL connection failed:', err.message);
     process.exit(1);
   }
 }

@@ -26,8 +26,11 @@ async function getMentorById(req, res) {
     const [rows] = await pool.query(
       `SELECT m.id, m.name, m.email, m.specialty, m.bio, m.avatar_url, m.contact_info,
               m.created_at,
-              JSON_ARRAYAGG(
-                JSON_OBJECT('id', w.id, 'title', w.title, 'date', w.date, 'status', w.status)
+              COALESCE(
+                JSON_AGG(
+                  JSON_BUILD_OBJECT('id', w.id, 'title', w.title, 'date', w.date, 'status', w.status)
+                ) FILTER (WHERE w.id IS NOT NULL),
+                '[]'
               ) AS workshops
        FROM mentors m
        LEFT JOIN workshops w ON w.mentor_id = m.id
@@ -65,7 +68,7 @@ async function createMentor(req, res) {
 
     const [result] = await pool.query(
       `INSERT INTO mentors (name, email, specialty, bio, avatar_url, contact_info)
-       VALUES (?, ?, ?, ?, ?, ?)`,
+       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
       [name, email, specialty, bio || null, avatar_url, contact_info || null]
     );
 
