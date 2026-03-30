@@ -1,19 +1,18 @@
 // controllers/mentorController.js
-// Admin adds/edits mentors; public can read them
 
 const { pool } = require('../config/db');
 const { validationResult } = require('express-validator');
 
-// ── GET /api/mentors — list all active mentors ──────
+// ── GET /api/mentors ─────────────────────────────────
 async function getAllMentors(req, res) {
   try {
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT id, name, email, specialty, bio, avatar_url, contact_info, created_at
        FROM mentors
        WHERE is_active = TRUE
        ORDER BY created_at DESC`
     );
-    return res.status(200).json({ success: true, count: rows.length, mentors: rows });
+    return res.status(200).json({ success: true, count: result.rows.length, mentors: result.rows });
   } catch (err) {
     console.error('getAllMentors error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
@@ -23,7 +22,7 @@ async function getAllMentors(req, res) {
 // ── GET /api/mentors/:id ─────────────────────────────
 async function getMentorById(req, res) {
   try {
-    const [rows] = await pool.query(
+    const result = await pool.query(
       `SELECT m.id, m.name, m.email, m.specialty, m.bio, m.avatar_url, m.contact_info,
               m.created_at,
               COALESCE(
@@ -34,23 +33,23 @@ async function getMentorById(req, res) {
               ) AS workshops
        FROM mentors m
        LEFT JOIN workshops w ON w.mentor_id = m.id
-       WHERE m.id = ?
+       WHERE m.id = $1
        GROUP BY m.id`,
       [req.params.id]
     );
 
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Mentor not found.' });
     }
 
-    return res.status(200).json({ success: true, mentor: rows[0] });
+    return res.status(200).json({ success: true, mentor: result.rows[0] });
   } catch (err) {
     console.error('getMentorById error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
 
-// ── POST /api/mentors (admin only) ─────────────────
+// ── POST /api/mentors (admin only) ───────────────────
 async function createMentor(req, res) {
   const errors = validationResult(req);
   if (!errors.isEmpty()) {
@@ -61,21 +60,23 @@ async function createMentor(req, res) {
   const avatar_url = req.file ? `/uploads/${req.file.filename}` : null;
 
   try {
-    const [existing] = await pool.query('SELECT id FROM mentors WHERE email = ?', [email]);
-    if (existing.length > 0) {
+    const existing = await pool.query(
+      'SELECT id FROM mentors WHERE email = $1', [email]
+    );
+    if (existing.rows.length > 0) {
       return res.status(409).json({ success: false, message: 'A mentor with this email already exists.' });
     }
 
-    const [result] = await pool.query(
+    const result = await pool.query(
       `INSERT INTO mentors (name, email, specialty, bio, avatar_url, contact_info)
-       VALUES (?, ?, ?, ?, ?, ?) RETURNING id`,
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING id`,
       [name, email, specialty, bio || null, avatar_url, contact_info || null]
     );
 
     return res.status(201).json({
       success: true,
       message: 'Mentor added successfully.',
-      mentorId: result.insertId,
+      mentorId: result.rows[0].id,
     });
   } catch (err) {
     console.error('createMentor error:', err);
@@ -83,34 +84,40 @@ async function createMentor(req, res) {
   }
 }
 
-// ── PUT /api/mentors/:id (admin only) ───────────────
+// ── PUT /api/mentors/:id (admin only) ────────────────
 async function updateMentor(req, res) {
   const { name, email, specialty, bio, contact_info, is_active } = req.body;
   const avatar_url = req.file ? `/uploads/${req.file.filename}` : undefined;
 
   try {
-    const [existing] = await pool.query('SELECT id FROM mentors WHERE id = ?', [req.params.id]);
-    if (existing.length === 0) {
+    const existing = await pool.query(
+      'SELECT id FROM mentors WHERE id = $1', [req.params.id]
+    );
+    if (existing.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'Mentor not found.' });
     }
 
     const fields = [];
     const values = [];
+    let paramCount = 1;
 
-    if (name !== undefined) fields.push('name = ?'), values.push(name);
-    if (email !== undefined) fields.push('email = ?'), values.push(email);
-    if (specialty !== undefined) fields.push('specialty = ?'), values.push(specialty);
-    if (bio !== undefined) fields.push('bio = ?'), values.push(bio);
-    if (contact_info !== undefined) fields.push('contact_info = ?'), values.push(contact_info);
-    if (is_active !== undefined) fields.push('is_active = ?'), values.push(is_active);
-    if (avatar_url !== undefined) fields.push('avatar_url = ?'), values.push(avatar_url);
+    if (name !== undefined)         { fields.push(`name = $${paramCount++}`);         values.push(name); }
+    if (email !== undefined)        { fields.push(`email = $${paramCount++}`);        values.push(email); }
+    if (specialty !== undefined)    { fields.push(`specialty = $${paramCount++}`);    values.push(specialty); }
+    if (bio !== undefined)          { fields.push(`bio = $${paramCount++}`);          values.push(bio); }
+    if (contact_info !== undefined) { fields.push(`contact_info = $${paramCount++}`); values.push(contact_info); }
+    if (is_active !== undefined)    { fields.push(`is_active = $${paramCount++}`);    values.push(is_active); }
+    if (avatar_url !== undefined)   { fields.push(`avatar_url = $${paramCount++}`);   values.push(avatar_url); }
 
     if (fields.length === 0) {
       return res.status(400).json({ success: false, message: 'No fields to update.' });
     }
 
     values.push(req.params.id);
-    await pool.query(`UPDATE mentors SET ${fields.join(', ')} WHERE id = ?`, values);
+    await pool.query(
+      `UPDATE mentors SET ${fields.join(', ')} WHERE id = $${paramCount}`,
+      values
+    );
 
     return res.status(200).json({ success: true, message: 'Mentor updated successfully.' });
   } catch (err) {
@@ -119,11 +126,13 @@ async function updateMentor(req, res) {
   }
 }
 
-// ── DELETE /api/mentors/:id (admin only) ────────────
+// ── DELETE /api/mentors/:id (admin only) ─────────────
 async function deleteMentor(req, res) {
   try {
-    const [result] = await pool.query('DELETE FROM mentors WHERE id = ?', [req.params.id]);
-    if (result.affectedRows === 0) {
+    const result = await pool.query(
+      'DELETE FROM mentors WHERE id = $1', [req.params.id]
+    );
+    if (result.rowCount === 0) {
       return res.status(404).json({ success: false, message: 'Mentor not found.' });
     }
     return res.status(200).json({ success: true, message: 'Mentor deleted.' });
