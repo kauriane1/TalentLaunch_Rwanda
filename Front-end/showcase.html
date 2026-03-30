@@ -207,10 +207,31 @@
     display: flex; justify-content: space-between; align-items: center;
   }
 
+  .tc-meta {
+    display: flex; align-items: center; gap: 8px;
+  }
+
   .tc-author { font-size: 0.78rem; color: #aaa; }
   .tc-tag {
     font-size: 0.72rem; padding: 3px 10px; border-radius: 100px;
     background: rgba(45,122,82,0.1); color: var(--green-mid); font-weight: 500;
+  }
+
+  .delete-btn {
+    border: none;
+    background: #ffecec;
+    color: #b42318;
+    border-radius: 999px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    font-family: 'DM Sans', sans-serif;
+    cursor: pointer;
+    transition: background 0.2s, transform 0.1s;
+  }
+
+  .delete-btn:hover {
+    background: #ffd9d9;
+    transform: translateY(-1px);
   }
 
   .empty-state {
@@ -340,7 +361,7 @@
     count = talents.length;
   }
 
-  function renderTalentCard(talent) {
+  function renderTalentCard(talent, index) {
     const card = document.createElement('div');
     card.className = 'talent-card';
     const color = colors[(talent.colorIndex || 0) % colors.length];
@@ -351,7 +372,10 @@
         <div class="tc-desc">${escapeHtml(talent.description || '')}</div>
         <div class="tc-footer">
           <span class="tc-author">by ${escapeHtml(talent.author || 'You')}</span>
-          <span class="tc-tag">${escapeHtml(talent.category || '')}</span>
+          <div class="tc-meta">
+            <span class="tc-tag">${escapeHtml(talent.category || '')}</span>
+            <button class="delete-btn" type="button" data-index="${index}">Delete</button>
+          </div>
         </div>
       </div>
     `;
@@ -361,12 +385,19 @@
   function renderTalents() {
     const grid = document.getElementById('talentGrid');
     grid.innerHTML = '';
-    talents.forEach((talent) => {
-      grid.appendChild(renderTalentCard(talent));
+    talents.forEach((talent, index) => {
+      grid.appendChild(renderTalentCard(talent, index));
     });
     document.getElementById('emptyState').style.display = talents.length ? 'none' : 'block';
     count = talents.length;
     updateCount();
+  }
+
+  function deleteTalent(index) {
+    if (index < 0 || index >= talents.length) return;
+    talents.splice(index, 1);
+    saveTalents();
+    renderTalents();
   }
 
   function updateCount() {
@@ -401,6 +432,13 @@
     const toast = document.getElementById('toast');
     toast.classList.add('show');
     setTimeout(() => toast.classList.remove('show'), 3000);
+  });
+
+  document.getElementById('talentGrid').addEventListener('click', function(e) {
+    const deleteButton = e.target.closest('.delete-btn');
+    if (!deleteButton) return;
+    const index = Number(deleteButton.dataset.index);
+    deleteTalent(index);
   });
 </script>
 
