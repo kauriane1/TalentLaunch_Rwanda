@@ -5,7 +5,6 @@ const jwt    = require('jsonwebtoken');
 const { pool } = require('../config/db');
 const { validationResult } = require('express-validator');
 
-// ── Helper: sign a JWT ───────────────────────────────
 function signToken(user) {
   return jwt.sign(
     { id: user.id, name: user.name, email: user.email, role: user.role },
@@ -24,24 +23,21 @@ async function register(req, res) {
   const { name, email, password, location } = req.body;
 
   try {
-    // Check if email already exists
-    const [existing] = await pool.query(
-      'SELECT id FROM users WHERE email = ?', [email]
+    const existing = await pool.query(
+      'SELECT id FROM users WHERE email = $1', [email]
     );
-    if (existing.length > 0) {
+    if (existing.rows.length > 0) {
       return res.status(409).json({ success: false, message: 'Email is already registered.' });
     }
 
-    // Hash password
     const hashed = await bcrypt.hash(password, 12);
 
-    // Insert user
-    const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, location) VALUES (?, ?, ?, ?) RETURNING id',
+    const result = await pool.query(
+      'INSERT INTO users (name, email, password, location) VALUES ($1, $2, $3, $4) RETURNING id',
       [name, email, hashed, location || null]
     );
 
-    const user = { id: result.insertId, name, email, role: 'youth' };
+    const user = { id: result.rows[0].id, name, email, role: 'youth' };
     const token = signToken(user);
 
     return res.status(201).json({
@@ -66,16 +62,16 @@ async function login(req, res) {
   const { email, password } = req.body;
 
   try {
-    const [rows] = await pool.query(
-      'SELECT id, name, email, password, role, location, bio, avatar_url FROM users WHERE email = ?',
+    const result = await pool.query(
+      'SELECT id, name, email, password, role, location, bio, avatar_url FROM users WHERE email = $1',
       [email]
     );
 
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
     }
 
-    const user = rows[0];
+    const user = result.rows[0];
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
       return res.status(401).json({ success: false, message: 'Invalid email or password.' });
@@ -106,19 +102,21 @@ async function createAdmin(req, res) {
   const { name, email, password, location } = req.body;
 
   try {
-    const [existing] = await pool.query('SELECT id FROM users WHERE email = ?', [email]);
-    if (existing.length > 0) {
+    const existing = await pool.query(
+      'SELECT id FROM users WHERE email = $1', [email]
+    );
+    if (existing.rows.length > 0) {
       return res.status(409).json({ success: false, message: 'Email is already registered.' });
     }
 
     const hashed = await bcrypt.hash(password, 12);
-    const [result] = await pool.query(
-      'INSERT INTO users (name, email, password, role, location) VALUES (?, ?, ?, ?, ?) RETURNING id',
+    const result = await pool.query(
+      'INSERT INTO users (name, email, password, role, location) VALUES ($1, $2, $3, $4, $5) RETURNING id',
       [name, email, hashed, 'admin', location || null]
     );
 
     const user = {
-      id: result.insertId,
+      id: result.rows[0].id,
       name,
       email,
       role: 'admin',
@@ -136,24 +134,24 @@ async function createAdmin(req, res) {
   }
 }
 
-// ── GET /api/auth/me  (protected) ────────────────────
+// ── GET /api/auth/me (protected) ─────────────────────
 async function getMe(req, res) {
   try {
-    const [rows] = await pool.query(
-      'SELECT id, name, email, role, location, bio, avatar_url, created_at FROM users WHERE id = ?',
+    const result = await pool.query(
+      'SELECT id, name, email, role, location, bio, avatar_url, created_at FROM users WHERE id = $1',
       [req.user.id]
     );
-    if (rows.length === 0) {
+    if (result.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
-    return res.status(200).json({ success: true, user: rows[0] });
+    return res.status(200).json({ success: true, user: result.rows[0] });
   } catch (err) {
     console.error('GetMe error:', err);
     return res.status(500).json({ success: false, message: 'Server error.' });
   }
 }
 
-// ── PUT /api/auth/me (protected): update profile, including avatar
+// ── PUT /api/auth/me (protected) ─────────────────────
 async function updateProfile(req, res) {
   try {
     const { name, email, location, bio } = req.body;
@@ -163,43 +161,51 @@ async function updateProfile(req, res) {
       return res.status(400).json({ success: false, message: 'Name and email are required.' });
     }
 
-    const [currentRows] = await pool.query('SELECT id, email FROM users WHERE id = ?', [req.user.id]);
-    if (currentRows.length === 0) {
+    const currentRows = await pool.query(
+      'SELECT id, email FROM users WHERE id = $1', [req.user.id]
+    );
+    if (currentRows.rows.length === 0) {
       return res.status(404).json({ success: false, message: 'User not found.' });
     }
 
-    const currentUser = currentRows[0];
+    const currentUser = currentRows.rows[0];
 
     if (email !== currentUser.email) {
-      const [emailCheck] = await pool.query('SELECT id FROM users WHERE email = ? AND id != ?', [email, req.user.id]);
-      if (emailCheck.length > 0) {
+      const emailCheck = await pool.query(
+        'SELECT id FROM users WHERE email = $1 AND id != $2', [email, req.user.id]
+      );
+      if (emailCheck.rows.length > 0) {
         return res.status(409).json({ success: false, message: 'Email is already in use by another account.' });
       }
     }
 
     const fields = [];
     const values = [];
+    let paramCount = 1;
 
-    fields.push('name = ?'); values.push(name);
-    fields.push('email = ?'); values.push(email);
-    fields.push('location = ?'); values.push(location || null);
-    fields.push('bio = ?'); values.push(bio || null);
+    fields.push(`name = $${paramCount++}`);     values.push(name);
+    fields.push(`email = $${paramCount++}`);    values.push(email);
+    fields.push(`location = $${paramCount++}`); values.push(location || null);
+    fields.push(`bio = $${paramCount++}`);      values.push(bio || null);
 
     if (avatar_url !== undefined) {
-      fields.push('avatar_url = ?');
+      fields.push(`avatar_url = $${paramCount++}`);
       values.push(avatar_url);
     }
 
     values.push(req.user.id);
 
-    await pool.query(`UPDATE users SET ${fields.join(', ')} WHERE id = ?`, values);
+    await pool.query(
+      `UPDATE users SET ${fields.join(', ')} WHERE id = $${paramCount}`,
+      values
+    );
 
-    const [updatedRows] = await pool.query(
-      'SELECT id, name, email, role, location, bio, avatar_url, created_at, updated_at FROM users WHERE id = ?',
+    const updatedResult = await pool.query(
+      'SELECT id, name, email, role, location, bio, avatar_url, created_at FROM users WHERE id = $1',
       [req.user.id]
     );
 
-    const updatedUser = updatedRows[0];
+    const updatedUser = updatedResult.rows[0];
     const newToken = signToken(updatedUser);
 
     return res.status(200).json({
