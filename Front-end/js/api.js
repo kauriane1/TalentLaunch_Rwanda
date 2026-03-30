@@ -1,29 +1,21 @@
 // js/api.js — Shared API layer for TalentLaunch Rwanda frontend
 
-// Dynamically determine API base URL
 const API_BASE = (() => {
   const hostname = window.location.hostname;
   const protocol = window.location.protocol;
 
-  // For Codespaces: use same hostname with /api proxy
   if (hostname.includes('.app.github.dev')) {
     const port = window.location.port;
     const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
-    const api = `${baseUrl}/api`;
-    console.log('[API] Codespaces API_BASE:', api);
-    return api;
+    return `${baseUrl}/api`;
   }
 
-  // For local development or docker environment
-  if (hostname === 'localhost' || hostname === '127.0.0.1' || hostname === '::1' || window.location.port === '3000') {
-    console.log('[API] Local API_BASE:', '/api');
+  if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return '/api';
   }
 
-  // Fallback to backend location
-  const fallback = `${protocol}//${hostname}:5000/api`;
-  console.log('[API] Fallback API_BASE:', fallback);
-  return fallback;
+  // Production — your actual backend service on Render
+  return 'https://talentlaunch-rwanda-6.onrender.com/api';
 })();
 
 console.log('[API] API_BASE:', API_BASE);
@@ -32,45 +24,34 @@ console.log('[API] API_BASE:', API_BASE);
 //  UTILITY FUNCTIONS
 // ─────────────────────────────────────────
 
-// Get stored JWT token
 function getToken() {
   return localStorage.getItem('token');
 }
 
-// Set JWT token
 function setToken(token) {
   localStorage.setItem('token', token);
 }
 
-// Remove JWT token (logout)
 function removeToken() {
   localStorage.removeItem('token');
 }
 
-// Check if user is logged in
 function isLoggedIn() {
   return !!getToken();
 }
 
-// Make authenticated API request
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
 
   const isMultipart = options.body instanceof FormData;
-  const headers = {
-    ...options.headers,
-  };
+  const headers = { ...options.headers };
 
   if (!isMultipart) {
     headers['Content-Type'] = 'application/json';
   }
 
-  const config = {
-    headers,
-    ...options,
-  };
+  const config = { headers, ...options };
 
-  // Add auth header if token exists
   const token = getToken();
   if (token) {
     config.headers.Authorization = `Bearer ${token}`;
@@ -80,7 +61,6 @@ async function apiRequest(endpoint, options = {}) {
     const response = await fetch(url, config);
     const data = await response.json();
 
-    // Handle unauthorized (token expired)
     if (response.status === 401) {
       removeToken();
       window.location.href = 'login.html';
@@ -114,11 +94,7 @@ async function login(credentials) {
     method: 'POST',
     body: JSON.stringify(credentials),
   });
-
-  if (data.token) {
-    setToken(data.token);
-  }
-
+  if (data.token) setToken(data.token);
   return data;
 }
 
@@ -138,9 +114,7 @@ async function updateProfile(profileData, avatarFile) {
       formData.append(key, profileData[key]);
     }
   });
-  if (avatarFile) {
-    formData.append('avatar', avatarFile);
-  }
+  if (avatarFile) formData.append('avatar', avatarFile);
 
   return apiRequest('/auth/me', {
     method: 'PUT',
@@ -174,28 +148,20 @@ async function getMentor(id) {
 
 async function createMentor(mentorData, avatarFile) {
   const formData = new FormData();
-  Object.keys(mentorData).forEach(key => {
-    formData.append(key, mentorData[key]);
-  });
-  if (avatarFile) {
-    formData.append('avatar', avatarFile);
-  }
+  Object.keys(mentorData).forEach(key => formData.append(key, mentorData[key]));
+  if (avatarFile) formData.append('avatar', avatarFile);
 
   return apiRequest('/mentors', {
     method: 'POST',
-    headers: {}, // Let browser set content-type for FormData
+    headers: {},
     body: formData,
   });
 }
 
 async function updateMentor(id, mentorData, avatarFile) {
   const formData = new FormData();
-  Object.keys(mentorData).forEach(key => {
-    formData.append(key, mentorData[key]);
-  });
-  if (avatarFile) {
-    formData.append('avatar', avatarFile);
-  }
+  Object.keys(mentorData).forEach(key => formData.append(key, mentorData[key]));
+  if (avatarFile) formData.append('avatar', avatarFile);
 
   return apiRequest(`/mentors/${id}`, {
     method: 'PUT',
@@ -205,14 +171,18 @@ async function updateMentor(id, mentorData, avatarFile) {
 }
 
 async function deleteMentor(id) {
-  return apiRequest(`/mentors/${id}`, {
-    method: 'DELETE',
-  });
+  return apiRequest(`/mentors/${id}`, { method: 'DELETE' });
 }
 
 // ─────────────────────────────────────────
 //  WORKSHOPS API
 // ─────────────────────────────────────────
+
+// FIX: this function was missing — caused admin page to crash on load
+async function getWorkshops(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return apiRequest('/workshops' + (query ? `?${query}` : ''));
+}
 
 async function getMyWorkshops() {
   return apiRequest('/workshops/my');
@@ -237,21 +207,15 @@ async function updateWorkshop(id, workshopData) {
 }
 
 async function deleteWorkshop(id) {
-  return apiRequest(`/workshops/${id}`, {
-    method: 'DELETE',
-  });
+  return apiRequest(`/workshops/${id}`, { method: 'DELETE' });
 }
 
 async function enrollInWorkshop(id) {
-  return apiRequest(`/workshops/${id}/enroll`, {
-    method: 'POST',
-  });
+  return apiRequest(`/workshops/${id}/enroll`, { method: 'POST' });
 }
 
 async function unenrollFromWorkshop(id) {
-  return apiRequest(`/workshops/${id}/enroll`, {
-    method: 'DELETE',
-  });
+  return apiRequest(`/workshops/${id}/enroll`, { method: 'DELETE' });
 }
 
 // ─────────────────────────────────────────
@@ -268,12 +232,8 @@ async function getTalent(id) {
 
 async function createTalent(talentData, file) {
   const formData = new FormData();
-  Object.keys(talentData).forEach(key => {
-    formData.append(key, talentData[key]);
-  });
-  if (file) {
-    formData.append('file', file);
-  }
+  Object.keys(talentData).forEach(key => formData.append(key, talentData[key]));
+  if (file) formData.append('file', file);
 
   return apiRequest('/talents', {
     method: 'POST',
@@ -290,9 +250,7 @@ async function updateTalent(id, talentData) {
 }
 
 async function deleteTalent(id) {
-  return apiRequest(`/talents/${id}`, {
-    method: 'DELETE',
-  });
+  return apiRequest(`/talents/${id}`, { method: 'DELETE' });
 }
 
 // ─────────────────────────────────────────
@@ -308,7 +266,6 @@ async function healthCheck() {
 // ─────────────────────────────────────────
 
 window.API = {
-  // Auth
   register,
   login,
   getMe,
@@ -316,14 +273,12 @@ window.API = {
   logout,
   isLoggedIn,
 
-  // Mentors
   getMentors,
   getMentor,
   createMentor,
   updateMentor,
   deleteMentor,
 
-  // Workshops
   getWorkshops,
   getWorkshop,
   getMyWorkshops,
@@ -333,16 +288,12 @@ window.API = {
   enrollInWorkshop,
   unenrollFromWorkshop,
 
-  // Talents
   getTalents,
   getTalent,
   createTalent,
   updateTalent,
   deleteTalent,
 
-  // Utils
   healthCheck,
-
-  // Token utilities
   setToken,
 };
