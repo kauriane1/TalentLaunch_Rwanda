@@ -377,11 +377,6 @@
 <div class="toast" id="toast"></div>
 
 <script>
-  // Check authentication
-  if (!API.isLoggedIn()) {
-    window.location.href = 'login.html';
-  }
-
   let currentUser = null;
 
   // Initialize
@@ -476,7 +471,13 @@
     setTimeout(() => toast.classList.remove('show'), 3000);
   }
 
-  initialize();
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!API.isLoggedIn()) {
+      window.location.href = 'login.html';
+      return;
+    }
+    initialize();
+  });
 </script>
 
 </body>
