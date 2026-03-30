@@ -12,17 +12,32 @@ const talentRoutes   = require('./routes/talentRoutes');
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
+// ─────────────────────────────────────────
+//  Global Middleware
+// ─────────────────────────────────────────
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production'
-    ? 'https://talentlaunch-1.onrender.com'  // FIX: replaced placeholder with real frontend URL
-    : '*',
+  origin: '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
 }));
 
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+
+// Serve uploaded files
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+// ─────────────────────────────────────────
+//  Serve Frontend Static Files
+// ─────────────────────────────────────────
+
+// Visiting https://talentlaunch-rwanda-6.onrender.com/ now loads your frontend
+app.use(express.static(path.join(__dirname, 'Front-end')));
+
+// ─────────────────────────────────────────
+//  API Routes (must come after static)
+// ─────────────────────────────────────────
 
 app.use('/api/auth',      authRoutes);
 app.use('/api/mentors',   mentorRoutes);
@@ -33,14 +48,27 @@ app.get('/api/health', (_req, res) => {
   res.json({ success: true, message: 'TalentLaunch API is running 🚀', env: process.env.NODE_ENV });
 });
 
-app.use((_req, res) => {
-  res.status(404).json({ success: false, message: 'Route not found.' });
+// ─────────────────────────────────────────
+//  Catch-all: send index.html for any page
+//  route so direct links still work
+// ─────────────────────────────────────────
+
+app.get('*', (req, res) => {
+  if (req.path.startsWith('/api/')) {
+    return res.status(404).json({ success: false, message: 'Route not found.' });
+  }
+  res.sendFile(path.join(__dirname, 'Front-end', 'index.html'));
 });
 
+// Global error handler
 app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({ success: false, message: err.message || 'Internal server error.' });
 });
+
+// ─────────────────────────────────────────
+//  Start Server
+// ─────────────────────────────────────────
 
 async function start() {
   await testConnection();
