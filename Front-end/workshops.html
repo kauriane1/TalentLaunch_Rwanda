@@ -285,7 +285,7 @@
     if (e.key === 'workshop_updated') loadWorkshops().then(renderWorkshops);
   });
 
-  initialize();
+  document.addEventListener('DOMContentLoaded', initialize);
 </script>
 </body>
 </html>
