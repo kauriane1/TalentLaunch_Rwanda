@@ -2,28 +2,31 @@
 
 const API_BASE = (() => {
   const hostname = window.location.hostname;
-  const protocol = window.location.protocol;
 
-  if (hostname.includes('.app.github.dev')) {
-    const port = window.location.port;
-    const baseUrl = port ? `${protocol}//${hostname}:${port}` : `${protocol}//${hostname}`;
-    return `${baseUrl}/api`;
-  }
-
+  // Local development
   if (hostname === 'localhost' || hostname === '127.0.0.1') {
     return '/api';
   }
 
-  // FIX: hardcoded real backend URL instead of wrong :5000 fallback
-  return 'https://talentlaunch-rwanda-6.onrender.com/api';
+  // GitHub Codespaces
+  if (hostname.includes('.app.github.dev')) {
+    const port = window.location.port;
+    const base = port
+      ? `${window.location.protocol}//${hostname}:${port}`
+      : `${window.location.protocol}//${hostname}`;
+    return `${base}/api`;
+  }
+
+  // Production: frontend and backend are on the same domain now
+  return '/api';
 })();
 
 console.log('[API] API_BASE:', API_BASE);
 
-function getToken()        { return localStorage.getItem('token'); }
-function setToken(token)   { localStorage.setItem('token', token); }
-function removeToken()     { localStorage.removeItem('token'); }
-function isLoggedIn()      { return !!getToken(); }
+function getToken()      { return localStorage.getItem('token'); }
+function setToken(t)     { localStorage.setItem('token', t); }
+function removeToken()   { localStorage.removeItem('token'); }
+function isLoggedIn()    { return !!getToken(); }
 
 async function apiRequest(endpoint, options = {}) {
   const url = `${API_BASE}${endpoint}`;
@@ -46,7 +49,6 @@ async function apiRequest(endpoint, options = {}) {
     }
 
     if (!response.ok) throw new Error(data.message || 'API request failed');
-
     return data;
   } catch (error) {
     console.error('API Error:', error);
@@ -66,9 +68,7 @@ async function login(credentials) {
   return data;
 }
 
-async function getMe() {
-  return apiRequest('/auth/me');
-}
+async function getMe() { return apiRequest('/auth/me'); }
 
 async function logout() {
   removeToken();
@@ -93,13 +93,8 @@ async function createAdmin(adminData) {
 
 // ── MENTORS ───────────────────────────────────────────
 
-async function getMentors() {
-  return apiRequest('/mentors');
-}
-
-async function getMentor(id) {
-  return apiRequest(`/mentors/${id}`);
-}
+async function getMentors()        { return apiRequest('/mentors'); }
+async function getMentor(id)       { return apiRequest(`/mentors/${id}`); }
 
 async function createMentor(mentorData, avatarFile) {
   const formData = new FormData();
@@ -121,19 +116,13 @@ async function deleteMentor(id) {
 
 // ── WORKSHOPS ─────────────────────────────────────────
 
-// FIX: this function was completely missing — caused admin page to crash silently on load
 async function getWorkshops(params = {}) {
   const query = new URLSearchParams(params).toString();
   return apiRequest('/workshops' + (query ? `?${query}` : ''));
 }
 
-async function getMyWorkshops() {
-  return apiRequest('/workshops/my');
-}
-
-async function getWorkshop(id) {
-  return apiRequest(`/workshops/${id}`);
-}
+async function getMyWorkshops()    { return apiRequest('/workshops/my'); }
+async function getWorkshop(id)     { return apiRequest(`/workshops/${id}`); }
 
 async function createWorkshop(workshopData) {
   return apiRequest('/workshops', { method: 'POST', body: JSON.stringify(workshopData) });
@@ -157,13 +146,12 @@ async function unenrollFromWorkshop(id) {
 
 // ── TALENTS ───────────────────────────────────────────
 
-async function getTalents() {
-  return apiRequest('/talents');
+async function getTalents(params = {}) {
+  const query = new URLSearchParams(params).toString();
+  return apiRequest('/talents' + (query ? `?${query}` : ''));
 }
 
-async function getTalent(id) {
-  return apiRequest(`/talents/${id}`);
-}
+async function getTalent(id) { return apiRequest(`/talents/${id}`); }
 
 async function createTalent(talentData, file) {
   const formData = new FormData();
@@ -182,9 +170,7 @@ async function deleteTalent(id) {
 
 // ── HEALTH ────────────────────────────────────────────
 
-async function healthCheck() {
-  return apiRequest('/health');
-}
+async function healthCheck() { return apiRequest('/health'); }
 
 // ── EXPORTS ───────────────────────────────────────────
 
