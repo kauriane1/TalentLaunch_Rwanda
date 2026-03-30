@@ -507,11 +507,6 @@
 </main>
 
 <script>
-  // Check authentication
-  if (!API.isLoggedIn()) {
-    window.location.href = 'login.html';
-  }
-
   // Load user data and dashboard stats
   async function loadDashboard() {
     try {
@@ -679,14 +674,20 @@
     }
   }
 
-  // Sign out functionality
-  document.querySelector('a[href="login.html"]').addEventListener('click', (e) => {
-    e.preventDefault();
-    API.logout();
-  });
+  document.addEventListener('DOMContentLoaded', () => {
+    if (!API.isLoggedIn()) {
+      window.location.href = 'login.html';
+      return;
+    }
 
-  // Load dashboard when page loads
-  document.addEventListener('DOMContentLoaded', loadDashboard);
+    // Sign out functionality
+    document.querySelector('a[href="login.html"]').addEventListener('click', (e) => {
+      e.preventDefault();
+      API.logout();
+    });
+
+    loadDashboard();
+  });
 </script>
 
 </body>
