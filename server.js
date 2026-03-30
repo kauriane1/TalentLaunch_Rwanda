@@ -12,13 +12,9 @@ const talentRoutes   = require('./routes/talentRoutes');
 const app  = express();
 const PORT = process.env.PORT || 5000;
 
-// ─────────────────────────────────────────
-//  Global Middleware
-// ─────────────────────────────────────────
-
 app.use(cors({
   origin: process.env.NODE_ENV === 'production'
-    ? 'https://talentlaunch-1.onrender.com'
+    ? 'https://talentlaunch-1.onrender.com'  // FIX: replaced placeholder with real frontend URL
     : '*',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   allowedHeaders: ['Content-Type', 'Authorization'],
@@ -27,10 +23,6 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-// ─────────────────────────────────────────
-//  Routes
-// ─────────────────────────────────────────
 
 app.use('/api/auth',      authRoutes);
 app.use('/api/mentors',   mentorRoutes);
@@ -49,10 +41,6 @@ app.use((err, _req, res, _next) => {
   console.error('Unhandled error:', err);
   res.status(err.status || 500).json({ success: false, message: err.message || 'Internal server error.' });
 });
-
-// ─────────────────────────────────────────
-//  Start Server
-// ─────────────────────────────────────────
 
 async function start() {
   await testConnection();
