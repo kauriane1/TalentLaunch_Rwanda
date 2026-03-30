@@ -19,18 +19,18 @@ const workshopRules = [
 // Public
 router.get('/', getAllWorkshops);
 
-// FIX: /my must come BEFORE /:id — otherwise Express matches "my" as an id
+// FIX: /my must be ABOVE /:id — otherwise Express reads "my" as an id value
 router.get('/my', protect, getMyWorkshops);
 
-// Single workshop by id
+// Single workshop
 router.get('/:id', getWorkshopById);
 
-// FIX: Admin routes were completely missing — workshops could never be created/edited/deleted
-router.post('/',     protect, adminOnly, workshopRules, createWorkshop);
-router.put('/:id',   protect, adminOnly, updateWorkshop);
-router.delete('/:id',protect, adminOnly, deleteWorkshop);
+// FIX: Admin routes were missing entirely — workshops could never be created/updated/deleted
+router.post('/',      protect, adminOnly, workshopRules, createWorkshop);
+router.put('/:id',    protect, adminOnly, updateWorkshop);
+router.delete('/:id', protect, adminOnly, deleteWorkshop);
 
-// Enroll / unenroll (authenticated users)
+// Enroll / unenroll
 router.post('/:id/enroll',   protect, enrollInWorkshop);
 router.delete('/:id/enroll', protect, unenrollFromWorkshop);
 
